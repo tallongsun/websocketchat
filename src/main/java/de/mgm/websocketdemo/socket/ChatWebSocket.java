@@ -1,9 +1,13 @@
 package de.mgm.websocketdemo.socket;
 
+
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 
 
-import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 
 /**
  * The "onTextMessage" Socket , there is also ControllMessage and BinaryMessage 
@@ -11,43 +15,38 @@ import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
  * @author cbelka
  *
  */
-public class ChatWebSocket implements OnTextMessage {
+public class ChatWebSocket implements WebSocketListener {
 	
-	private Connection connection;
+	private Session  connection;
 	
-	private Set<ChatWebSocket> users;
+	private static Set<ChatWebSocket> users = new CopyOnWriteArraySet<ChatWebSocket>();
 
-	public ChatWebSocket() {
 
+	public void onWebSocketClose(int closeCode, String message) {
+		users.remove(this);
 	}
 
-	public ChatWebSocket(Set<ChatWebSocket> users ) {
-		this.users = users;
-	}
-
-
-
-	public void onMessage(String data) {
-		for (ChatWebSocket user : users) {
-			try {
-				user.connection.sendMessage(data);
-			} catch (Exception e) {
-			}
-		}
-
-	}
-
-
-	@Override
-	public void onOpen(Connection connection) {
+	public void onWebSocketConnect(Session connection) {
 		this.connection = connection;
 		users.add(this);
 		
 	}
 
-	@Override
-	public void onClose(int closeCode, String message) {
-		users.remove(this);
+
+	public void onWebSocketText(String data) {
+		for (ChatWebSocket user : users) {
+			try {
+				user.connection.getRemote().sendString(data);
+			} catch (Exception e) {
+			}
+		}
+	}
+
+	public void onWebSocketBinary(byte[] arg0, int arg1, int arg2) {
+		
+	}
+
+	public void onWebSocketError(Throwable arg0) {
 		
 	}
 
